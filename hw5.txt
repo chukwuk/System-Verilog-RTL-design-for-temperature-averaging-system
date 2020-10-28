@@ -1,0 +1,117 @@
+ECE 574 Homework 5
+
+Temperature Averager System(tas)
+
+Background:
+NASA has launched a space probe that is to orbit the moon of a planet in our solar system.
+This probe, among its other duties, is to report back to earth at 5 to 15 minute intervals the
+temperature at the surface of the moon.
+
+Operation:
+The space probe records four temperature readings per hour. When the probe is in radio contact with tracking stations on Earth, 
+a header of either 8hA5 or 8hC3 will be sent to indicate the beginning of a transmission, fol-
+lowed by four temperature readings, sent no closer than 5 minutes apart and no
+further than 15 minutes apart (so the 4 readings are sent within an hour of each other). 
+At the receiver side, a temperature averaging system (tas) averages the four
+readings and writes the result to RAM.
+
+As the probe orbits the moon it will periodically loose contact with earth for up to one
+hour. During loss of contact, the probe queues the temperature read-
+ings until contact is reestablished. Therefore, sometimes partial packets will be received
+consisting of only a header or a header plus one to three temperature readings. In this case,
+the packet bytes remain in order and the remaining bytes are sent upon reestablishing con-
+tact.
+When the probe re-establishes contact, there may be new readings to send as well as “leftover” 
+readings. In this case the probe will delay sending
+the new reading for one second after the old readings are sent.
+
+Requirements:
+You will design the tas.
+A digital system is required to capture the temperature information sent from the probe
+and write the hourly average temperatures into a two-port static RAM (2K x 8) where fur-
+ther processing will take place with the aid of a microcomputer.
+This tas must take into account the above characteristics of the measurement transmission.
+
+The interface of the tas to the outside world is as follows:
+
+module tas (
+       input  clk_50,               // 50Mhz input clock
+       input  clk_2,                // 2Mhz input clock
+       input  reset_n,              // reset async active low
+       input  serial_data,          // serial input data
+       input  data_ena,             // serial data enable
+       output ram_wr_n,             // write strobe to ram (i.e., write enable), active low
+       output [7:0] ram_data,       // ram data
+       output [10:0] ram_addr       // ram address
+       );
+
+
+Message Protocol:
+All data from the probe is sent within a five byte packet. Each packet is preceded with a
+header indicating the data type. Four data bytes follow (corresponding to the four readings per hour
+that the probe performs). The header indicating temperature
+data will be either 8hA5 or 8hC3. Data packets other than temperature data are to be ignored.
+
+Data Format:
+The temperature information in the data fields is in binary format. It will range in value
+from 0 to 127 to indicate temperature in degrees.
+See tb.sv to see what kind of data will be sent to your tas module.
+
+
+Input:
+Data from the probe is sent clock synchronous at a 50Mhz rate. The 50 MHz clock from
+external logic is free running (i.e. never stops).
+Note that the input serial_data is 1bit wide. So you are receiving serial data which you must somehow 
+concatenate into data bytes, as per the message protocol.
+Bits within a byte are sent consecutively. Consecutive bytes (header or data) are separated
+by *at least* one 50Mhz clock cycle during which nothing is transmitted.
+
+The reset signal reset_n is asserted early before any clock or enable signals begin to assert.
+It is to reset all your logic, but does NOT clear the RAM.
+
+Output Data Format:
+The data that the tas writes to RAM consists of subsequent averaged temperatures 
+starting at address 0x07FF (the 0x prefix is another way of indicating a hex value). 
+Subsequent averages are written to the next lower address
+location; 0x07FE, 0x07FD, etc. When location 0x0000 is written, the next write is to loca-
+tion 0x07FF.
+Header bytes are not to be stored in RAM. Only data bytes.
+
+RAM Timing:
+The averaged temperature data is to be written into an asynchronous static RAM. This
+RAM is configured as 2K by 8 bits - i.e., 2048 rows, each 8bit-wide (2K = 2*2^10). The tas need only control the
+address, data and a write strobe. The write strobe signal ram_wr_n must be guaranteed to
+be glitch free and should be asserted for the minimum time allowed by the system.
+
+Miscellaneous Requirements:
+The temperature averaging system is to operate at a clock frequency of 2Mhz where possi-
+ble.
+The maximum number of the synthesized netlist is 1000.
+
+Submission:
+Your Verilog code. Top module tas must be in file tas.sv
+	- your code should be modular - don’t be afraid to create additional modules that are instantiated inside tas().
+	- every new module should be in its own file, named same as the module.
+	- your tas.sv must compile along with the test bench tb.sv provided in this assignment.
+Sample output file generated when running the code.
+Synthesized netlist in verilog format
+Gate count you obtained
+
+Grading rubric:
+5%	Correctly separates incoming data into packets
+10%	Correctly groups packets into transmissions
+10%	Correctly averages data
+5%	Correctly computes RAM addresses where to store averages
+10%	Correctly discards non-temperature packets
+10%	Averaging uses combinational logic
+10%	Serial data enable signal is respected
+10%	Buffers are properly sized
+5%	Gate count limit is met
+5%	Synthesized netlist attached
+10%	Reset has desired effect
+10%	Coding style, comments
+
+
+
+
+
