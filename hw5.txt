@@ -1,4 +1,4 @@
-ECE 574 Homework 5
+ECE 574 Project
 
 Temperature Averager System(tas)
 
